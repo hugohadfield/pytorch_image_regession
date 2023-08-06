@@ -1,17 +1,18 @@
 
+from typing import Tuple
+
 import torch.nn as nn
 import torch
 import numpy as np
 
 from data_loading import RegressionTaskData
-from generate_sample_dataset import synthesise_image
 
 
 class CNNRegression(nn.Module):
     """
     This will be the very basic CNN model we will use for the regression task.
     """
-    def __init__(self, image_size=(100, 100)):
+    def __init__(self, image_size: Tuple[int, int] = (100, 100)):
         super(CNNRegression, self).__init__()
         self.image_size = image_size
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1)

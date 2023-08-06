@@ -4,6 +4,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 import torch
+import torch.utils.data
 from torchvision import datasets, transforms
 
 import matplotlib.pyplot as plt
@@ -65,7 +66,7 @@ class RegressionImageFolder(datasets.ImageFolder):
     ) -> None:
         super().__init__(root, *args, **kwargs)
         paths, _ = zip(*self.imgs)
-        self.targets = [image_targets[path] for path in paths]
+        self.targets = [image_targets[str(path)] for path in paths]
         self.samples = self.imgs = list(zip(paths, self.targets))
 
 
@@ -91,7 +92,7 @@ class RegressionTaskData:
         Builds the train data loader
         """
         train_data = RegressionImageFolder(
-            self.image_folder_path / 'train', 
+            str(self.image_folder_path / 'train'), 
             image_targets=load_image_targets_from_csv(self.image_folder_path / 'train.csv'),
             transform=train_transforms
         )
@@ -108,7 +109,7 @@ class RegressionTaskData:
         Builds the test data loader
         """
         test_data = RegressionImageFolder(
-            self.image_folder_path / 'test', 
+            str(self.image_folder_path / 'test'), 
             image_targets=load_image_targets_from_csv(self.image_folder_path / 'test.csv'),
             transform=test_transforms
         )
@@ -128,5 +129,6 @@ class RegressionTaskData:
 
 
 if __name__ == '__main__':
-    data = RegressionTaskData()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    data = RegressionTaskData(device)
     data.visualise_image()
