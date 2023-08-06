@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 import torch
-import torch.utils.data
+import torch.utils.data 
 from torchvision import datasets, transforms
 
 import matplotlib.pyplot as plt
@@ -20,17 +20,31 @@ RESIZED_IMAGE_SIZE = 100
 
 
 # Set up the transforms on load of the data
-DEFAULT_TRAIN_TRANSFORMS = transforms.Compose(
+DEFAULT_TRAIN_TRANSFORMS_GRAYSCALE = transforms.Compose(
     [
         transforms.CenterCrop(CENTRE_CROP_SIZE),
         transforms.Resize(RESIZED_IMAGE_SIZE),
-        transforms.Grayscale(),  # Comment this out if you want to work with color images
+        transforms.Grayscale(),
         transforms.ToTensor()
     ]
 )
 # In this case, as we aren't doing any kind of random augmentation we 
 # can use the same transforms for the test data as the train data
-DEFAULT_TEST_TRANSFORMS = DEFAULT_TRAIN_TRANSFORMS 
+DEFAULT_TEST_TRANSFORMS_GRAYSCALE = DEFAULT_TRAIN_TRANSFORMS_GRAYSCALE 
+
+
+# Set up the transforms on load of the data
+DEFAULT_TRAIN_TRANSFORMS_COLOR = transforms.Compose(
+    [
+        transforms.CenterCrop(CENTRE_CROP_SIZE),
+        transforms.Resize(RESIZED_IMAGE_SIZE),
+        transforms.ToTensor()
+    ]
+)
+# In this case, as we aren't doing any kind of random augmentation we 
+# can use the same transforms for the test data as the train data
+DEFAULT_TEST_TRANSFORMS_COLOR = DEFAULT_TRAIN_TRANSFORMS_COLOR 
+
 
 
 def load_image_targets_from_csv(csv_path: Path, header: bool = True) -> Dict[str, Any]:
@@ -77,20 +91,24 @@ class RegressionTaskData:
     """
     def __init__(
         self,
-        device,
+        grayscale: bool = False,
         image_folder_path: Path = DEFAULT_IMAGE_FOLDER_PATH,
     ) -> None:
+        self.grayscale = grayscale
         self.image_folder_path = image_folder_path
         self.trainloader = self.make_trainloader()
         self.testloader = self.make_testloader()
 
     def make_trainloader(
             self, 
-            train_transforms = DEFAULT_TRAIN_TRANSFORMS
         ) -> torch.utils.data.DataLoader:
         """
         Builds the train data loader
         """
+        if self.grayscale:
+            train_transforms = DEFAULT_TRAIN_TRANSFORMS_GRAYSCALE
+        else:
+            train_transforms = DEFAULT_TRAIN_TRANSFORMS_COLOR
         train_data = RegressionImageFolder(
             str(self.image_folder_path / 'train'), 
             image_targets=load_image_targets_from_csv(self.image_folder_path / 'train.csv'),
@@ -100,14 +118,16 @@ class RegressionTaskData:
         trainloader = torch.utils.data.DataLoader(train_data, batch_size=32)
         return trainloader
 
-
     def make_testloader(
             self, 
-            test_transforms = DEFAULT_TRAIN_TRANSFORMS
         ) -> torch.utils.data.DataLoader:
         """
         Builds the test data loader
         """
+        if self.grayscale:
+            test_transforms = DEFAULT_TEST_TRANSFORMS_GRAYSCALE
+        else:
+            test_transforms = DEFAULT_TEST_TRANSFORMS_COLOR
         test_data = RegressionImageFolder(
             str(self.image_folder_path / 'test'), 
             image_targets=load_image_targets_from_csv(self.image_folder_path / 'test.csv'),
@@ -124,11 +144,13 @@ class RegressionTaskData:
         images, targets = next(iter(self.trainloader))
         print(targets[0].shape)
         print(images[0].shape)
-        plt.imshow(images[0][0, :, :])
+        if self.grayscale:
+            plt.imshow(images[0][0, :, :], cmap='gray')
+        else:
+            plt.imshow(images[0].permute(1, 2, 0))
         plt.show()
 
 
 if __name__ == '__main__':
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    data = RegressionTaskData(device)
+    data = RegressionTaskData()
     data.visualise_image()

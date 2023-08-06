@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch
 import numpy as np
 
+from torch.utils.tensorboard import SummaryWriter
+
 from data_loading import RegressionTaskData
 
 
@@ -12,14 +14,15 @@ class CNNRegression(nn.Module):
     """
     This will be the very basic CNN model we will use for the regression task.
     """
-    def __init__(self, image_size: Tuple[int, int] = (100, 100)):
+    def __init__(self, image_size: Tuple[int, int, int] = (3, 100, 100)):
         super(CNNRegression, self).__init__()
         self.image_size = image_size
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(in_channels=self.image_size[0], out_channels=4, kernel_size=3, stride=1, padding=1)
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv2 = nn.Conv2d(in_channels=4, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(in_features=self.image_size[0]*self.image_size[1], out_features=128)
+        self.linear_line_size = int(16*(image_size[1]//4)*(image_size[2]//4))
+        self.fc1 = nn.Linear(in_features=self.linear_line_size, out_features=128)
         self.fc2 = nn.Linear(in_features=128, out_features=2)
 
         
@@ -44,7 +47,7 @@ class CNNRegression(nn.Module):
         # print(f'relu2 {x.size()}')
         x = self.pool2(x)
         # print(f'pool2 {x.size()}')
-        x = x.view(-1, self.image_size[0]*self.image_size[1])
+        x = x.view(-1, self.linear_line_size)
         # print(f'view1 {x.size()}')
         x = self.fc1(x)
         # print(f'fc1 {x.size()}')
@@ -55,20 +58,25 @@ class CNNRegression(nn.Module):
         return x
     
 
-def train_network(device, n_epochs: int = 10):
+def train_network(device, n_epochs: int = 10, image_size: Tuple[int, int, int] = (3, 100, 100)):
     """
     This trains the network for a set number of epochs.
     """
-    regression_task = RegressionTaskData(device)
+    if image_size[0] == 1:
+        grayscale = True
+    else:
+        grayscale = False
+    regression_task = RegressionTaskData(grayscale=grayscale)
 
     # Define the model, loss function, and optimizer
-    model = CNNRegression()
+    model = CNNRegression(image_size=image_size)
     model.to(device)
     print(model)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # Train the model
+    writer = SummaryWriter()
     for epoch in range(n_epochs):
         for i, (inputs, targets) in enumerate(regression_task.trainloader):
             # Zero the gradients
@@ -82,20 +90,24 @@ def train_network(device, n_epochs: int = 10):
             loss.backward()
             optimizer.step()
 
+            writer.add_scalar('Train Loss', loss.item(), i)
+
             # Print training statistics
             if (i + 1) % 10 == 0:
                 print(f'Epoch [{epoch + 1}/{n_epochs}], Step [{i + 1}/{len(regression_task.trainloader)}], Loss: {loss.item():.4f}')
+    writer.close()
+
     return model
 
 
-def save_model(model, filename='100_100.pth'):
+def save_model(model, filename='3_100_100.pth'):
     """
     After training the model, save it so we can use it later.
     """
     torch.save(model.state_dict(), filename)
 
 
-def load_model(image_size=(100, 100), filename='100_100.pth'):
+def load_model(image_size=(3, 100, 100), filename='3_100_100.pth'):
     """
     Load the model from the saved state dictionary.
     """
@@ -104,11 +116,15 @@ def load_model(image_size=(100, 100), filename='100_100.pth'):
     return model
 
 
-def evaluate_network(model, device):
+def evaluate_network(model, device, image_size: Tuple[int, int, int] = (3, 100, 100)):
     """
     This evaluates the network on the test data.
     """
-    regression_task = RegressionTaskData(device)
+    if image_size[0] == 1:
+        grayscale = True
+    else:
+        grayscale = False
+    regression_task = RegressionTaskData(grayscale=grayscale)
     criterion = nn.MSELoss()
 
     # Evaluate the model on the test data
@@ -141,20 +157,23 @@ def evaluate_network(model, device):
         print(f'Test mean angle error: {mean_angle_error:.4f} degrees')
 
 
+
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Using device: {device}')
 
     # Train the model
-    model = train_network(device, 20)
+    image_size: Tuple[int, int, int] = (1, 100, 100)
+    model = train_network(device, 20, image_size=image_size)
 
     # Save the model
-    save_model(model)
+    filename = f'{image_size[0]}_{image_size[1]}_{image_size[2]}.pth'
+    save_model(model, filename=filename)
 
     # Load the model
-    model = load_model()
+    model = load_model(image_size=image_size, filename=filename)
     model.to(device)
 
     # Evaluate the model
-    evaluate_network(model, device)
+    evaluate_network(model, device, image_size=image_size)
     
