@@ -8,7 +8,9 @@ This repo is a super basic template for setting up an image regression task, loa
 The regression task set up here is purposefully simple. Our neural network should be able to absolutely crush this.
 
 Given an image like this:
+
 ![example input image](example_dataset/train/images/image_0.png)
+
 The network has to learn to regress a target which is the direction of the arrow as a 2d vector of length 1.0.
 For this image the target answer is `0.9633736512703545,-0.2681626522057565`.
 
