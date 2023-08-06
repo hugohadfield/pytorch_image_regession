@@ -15,36 +15,39 @@ import numpy as np
 DEFAULT_IMAGE_FOLDER_PATH = Path('example_dataset/')
 
 # This script is set up to crop first, then resize
-CENTRE_CROP_SIZE = 200
-RESIZED_IMAGE_SIZE = 100
+DEFAULT_CENTRE_CROP_SIZE = 200
+DEFAULT_RESIZED_IMAGE_SIZE = 100
 
 
-# Set up the transforms on load of the data
-DEFAULT_TRAIN_TRANSFORMS_GRAYSCALE = transforms.Compose(
-    [
-        transforms.CenterCrop(CENTRE_CROP_SIZE),
-        transforms.Resize(RESIZED_IMAGE_SIZE),
-        transforms.Grayscale(),
-        transforms.ToTensor()
-    ]
-)
-# In this case, as we aren't doing any kind of random augmentation we 
-# can use the same transforms for the test data as the train data
-DEFAULT_TEST_TRANSFORMS_GRAYSCALE = DEFAULT_TRAIN_TRANSFORMS_GRAYSCALE 
-
-
-# Set up the transforms on load of the data
-DEFAULT_TRAIN_TRANSFORMS_COLOR = transforms.Compose(
-    [
-        transforms.CenterCrop(CENTRE_CROP_SIZE),
-        transforms.Resize(RESIZED_IMAGE_SIZE),
-        transforms.ToTensor()
-    ]
-)
-# In this case, as we aren't doing any kind of random augmentation we 
-# can use the same transforms for the test data as the train data
-DEFAULT_TEST_TRANSFORMS_COLOR = DEFAULT_TRAIN_TRANSFORMS_COLOR 
-
+def get_transforms(grayscale: bool = False, crop_size: int = DEFAULT_CENTRE_CROP_SIZE, resize_size: int = DEFAULT_RESIZED_IMAGE_SIZE):
+    """
+    This function returns the transforms that are applied to the images when they are loaded.
+    """
+    # Set up the transforms on load of the data
+    if grayscale:
+        train_transforms = transforms.Compose(
+            [
+                transforms.CenterCrop(crop_size),
+                transforms.Resize(resize_size),
+                transforms.Grayscale(),
+                transforms.ToTensor()
+            ]
+        )
+        # In this case, as we aren't doing any kind of random augmentation we 
+        # can use the same transforms for the test data as the train data
+        test_transforms = train_transforms
+    else:
+        train_transforms = transforms.Compose(
+            [
+                transforms.CenterCrop(crop_size),
+                transforms.Resize(resize_size),
+                transforms.ToTensor()
+            ]
+        )
+        # In this case, as we aren't doing any kind of random augmentation we 
+        # can use the same transforms for the test data as the train data
+        test_transforms = train_transforms
+    return train_transforms, test_transforms
 
 
 def load_image_targets_from_csv(csv_path: Path, header: bool = True) -> Dict[str, Any]:
@@ -93,11 +96,20 @@ class RegressionTaskData:
         self,
         grayscale: bool = False,
         image_folder_path: Path = DEFAULT_IMAGE_FOLDER_PATH,
+        crop_size: int = DEFAULT_CENTRE_CROP_SIZE,
+        resize_size: int = DEFAULT_RESIZED_IMAGE_SIZE,
     ) -> None:
         self.grayscale = grayscale
         self.image_folder_path = image_folder_path
+        self.train_transforms, self.test_transforms = get_transforms(grayscale, crop_size, resize_size)
         self.trainloader = self.make_trainloader()
         self.testloader = self.make_testloader()
+        self.crop_size = crop_size
+        self.resize_size = resize_size
+
+    @property
+    def output_image_size(self):
+        return (1 if self.grayscale else 3, self.resize_size, self.resize_size)
 
     def make_trainloader(
             self, 
@@ -105,14 +117,10 @@ class RegressionTaskData:
         """
         Builds the train data loader
         """
-        if self.grayscale:
-            train_transforms = DEFAULT_TRAIN_TRANSFORMS_GRAYSCALE
-        else:
-            train_transforms = DEFAULT_TRAIN_TRANSFORMS_COLOR
         train_data = RegressionImageFolder(
             str(self.image_folder_path / 'train'), 
             image_targets=load_image_targets_from_csv(self.image_folder_path / 'train.csv'),
-            transform=train_transforms
+            transform=self.train_transforms
         )
         # This constructs the dataloader that actually determins how images will be loaded in batches
         trainloader = torch.utils.data.DataLoader(train_data, batch_size=32)
@@ -124,14 +132,10 @@ class RegressionTaskData:
         """
         Builds the test data loader
         """
-        if self.grayscale:
-            test_transforms = DEFAULT_TEST_TRANSFORMS_GRAYSCALE
-        else:
-            test_transforms = DEFAULT_TEST_TRANSFORMS_COLOR
         test_data = RegressionImageFolder(
             str(self.image_folder_path / 'test'), 
             image_targets=load_image_targets_from_csv(self.image_folder_path / 'test.csv'),
-            transform=test_transforms
+            transform=self.test_transforms
         )
         # This constructs the dataloader that actually determins how images will be loaded in batches
         testloader = torch.utils.data.DataLoader(test_data, batch_size=32)

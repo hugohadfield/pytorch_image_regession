@@ -66,7 +66,9 @@ def train_network(device, n_epochs: int = 10, image_size: Tuple[int, int, int] =
         grayscale = True
     else:
         grayscale = False
-    regression_task = RegressionTaskData(grayscale=grayscale)
+    assert image_size[1] == image_size[2], 'Image size must be square'
+    resize_size = image_size[1]
+    regression_task = RegressionTaskData(grayscale=grayscale, resize_size=resize_size)
 
     # Define the model, loss function, and optimizer
     model = CNNRegression(image_size=image_size)
@@ -124,7 +126,9 @@ def evaluate_network(model, device, image_size: Tuple[int, int, int] = (3, 100, 
         grayscale = True
     else:
         grayscale = False
-    regression_task = RegressionTaskData(grayscale=grayscale)
+    assert image_size[1] == image_size[2], 'Image size must be square'
+    resize_size = image_size[1]
+    regression_task = RegressionTaskData(grayscale=grayscale, resize_size=resize_size)
     criterion = nn.MSELoss()
 
     # Evaluate the model on the test data
@@ -163,7 +167,7 @@ if __name__ == '__main__':
     print(f'Using device: {device}')
 
     # Train the model
-    image_size: Tuple[int, int, int] = (1, 100, 100)
+    image_size: Tuple[int, int, int] = (3, 100, 100)
     model = train_network(device, 20, image_size=image_size)
 
     # Save the model
