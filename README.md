@@ -3,7 +3,8 @@ It is really common to find tutorials and examples of doing image **classificati
 
 This repo is a super basic template for setting up an image regression task, loading images and csv data, training a network, and evaluating its performance on a test set.
 
-This has been put together by pulling from a range of other different tutorials etc on the web.
+This has been put together by pulling from a range of other different tutorials etc. on the web. Specifically shout out to:
+[https://www.kaggle.com/code/leifuer/intro-to-pytorch-loading-image-data] and [https://github.com/pytorch/vision/issues/2930] for the data loading bit, and [https://saturncloud.io/blog/convolution-neural-network-for-regression-using-pytorch/] for the network bit.
 
 # The simple regression task
 The regression task set up here is purposefully simple. Our neural network should be able to absolutely crush this.
@@ -34,7 +35,7 @@ The dataset is generated with the script `generate_sample_dataset.py`. If you ju
 # The data loader
 The main useful bit of this repo is probably `data_loading.py`. In this file we define how the image and target loading is done. Specifically we use a subclass of `torchvision.datasets.ImageFolder` but we overload attributes such that it sets everything up as a regression task rather than a classification one.
 
-This is the main useful bit of the data loader:
+This is the main useful bit of the data loader, which I grabbed from this discussion `[https://github.com/pytorch/vision/issues/2930]:
 ```
 class RegressionImageFolder(datasets.ImageFolder):
     """
