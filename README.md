@@ -3,6 +3,7 @@ It is really common to find tutorials and examples of doing image **classificati
 
 This repo is a super basic template for setting up an image regression task, loading images and csv data, training a network, and evaluating its performance on a test set.
 
+This has been put together by pulling from a range of other different tutorials etc on the web.
 
 # The simple regression task
 The regression task set up here is purposefully simple. Our neural network should be able to absolutely crush this.
