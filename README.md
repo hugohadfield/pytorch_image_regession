@@ -7,7 +7,7 @@ This has been put together by pulling from a range of other different tutorials 
 [https://www.kaggle.com/code/leifuer/intro-to-pytorch-loading-image-data] and [https://github.com/pytorch/vision/issues/2930] for the data loading bit, and [https://saturncloud.io/blog/convolution-neural-network-for-regression-using-pytorch/] for the network bit.
 
 # The simple regression task
-The regression task set up here is purposefully simple. *Our neural network should be able to absolutely crush this.*
+The regression task set up here is purposefully simple. **Our neural network should be able to absolutely crush this.**
 
 Given an image like this:
 
