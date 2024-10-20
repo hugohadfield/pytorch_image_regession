@@ -109,3 +109,10 @@ Test Loss: 0.0001
 Test mean angle error: 0.3546 degrees
 ```
 so it can estimate the orientation of the arrow to within about 0.35 degrees.
+
+# What Now?
+1. Clone the repo
+2. Add your own dataset
+3. Train the network for your task
+4. Have fun :)
+
